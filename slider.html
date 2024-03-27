@@ -1,0 +1,235 @@
+<html>
+    <head>
+        <title>Slider</title>
+        <style>
+            body{
+                margin:0;
+                padding:0;
+            }
+
+            body *{
+                box-sizing:border-box;
+            }
+
+            .modal{
+                position: fixed;
+                display: none;
+                justify-content: center;
+                align-items: center;
+                width: 100vw;
+                height: 100vh;
+                padding: 4px;
+            }
+
+            .modal > div{
+                display: flex;
+                flex-direction: column;
+                min-width:30%;
+                width: fit-content;
+                background-color: white;
+                box-shadow: 4px 4px 4px gray;
+                flex-direction: column;
+                padding: 4px;
+            }
+
+            .modal .modal-body{
+                text-align: center;
+            }
+
+            .modal .modal-footer{
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .btn{
+                height:32px;
+                color:white;
+                border:0px;
+                border-radius: 1.5rem;
+                min-width:96;
+                width: fit-content;
+                margin: 1px;
+            } 
+
+            .btn-blue{
+                background-color: RGB(32, 64, 160);
+            } 
+
+            .btn-blue:hover{
+                background-color: RGB(32, 32, 128);
+            } 
+
+            .kontainer{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .kontainer-game{
+                display: flex;
+                flex-direction: row;
+            }
+
+            .kontainer-game > *{
+                margin:0px 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="modal" id="modal-menang">
+            <div>
+                <div class="modal-body">
+                    <h2>Anda Menang</h2>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-blue" onclick="ganti_level()">Lanjutkan</button>
+                    <button class="btn btn-blue" onclick="sembunyikan('modal-menang')">Batal</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal" id="modal-gambar">
+            <div>
+                <img src="gambar.png" id="gambar" alt="">
+                <div class="modal-footer">
+                    <button class="btn btn-blue" onclick="sembunyikan('modal-gambar')">Sembunyikan</button>
+                </div>
+            </div>
+        </div>
+        <div class="kontainer">
+            <div class="kontainer-game">
+                <canvas id="kanvas" height="800" width="800" style="border:2px double orange;background-color: yellow;;">Canvas tidak bisa digunakan</canvas>
+                <p>Level: <span id="level">1</span></p>
+            </div>
+            <button class="btn btn-blue" onclick="tampilkan('modal-gambar')">Gambar</button>
+        </div>
+        <script>
+            var kanvas=document.getElementById('kanvas');
+            var ct=kanvas.getContext("2d");
+            var img=document.getElementById('gambar');
+            
+            var info={
+                hole:4,
+                kolom:3,
+                baris:3,
+                tile:9,
+                level:1
+            }
+
+            var map=Array.from({length: 100}, (x, i) => i);
+
+            function ganti_level(){
+                const level=document.getElementById('level');
+                if(info.kolom<=info.baris)info.kolom++;
+                else info.baris++;
+                info.tile=info.kolom*info.baris;
+                info.level++;
+                level.innerHTML=info.level;
+
+                acak();
+                gambar_slider(ct, img);
+
+                sembunyikan('modal-menang');
+            }
+            
+            function acak(){
+                let tmp=0;
+                let n=info.tile;
+
+                for(let i=0;i<n;i++)map[i]=i;
+
+                info.hole=Math.floor(Math.random()*100) % info.tile;
+                for(let i=0;i<1000;i++){
+                    tmp=Math.floor(Math.random()*100) % info.tile;
+                    
+                    x=tmp % info.kolom;
+                    y=Math.floor(tmp / info.kolom);
+                    
+                    geser(x, y);
+                }
+            }
+            
+            function gambar_slider(ct, img){
+                let pj=info.tile;
+
+                let panjang=img.width / info.kolom;
+                let tinggi=img.height / info.baris;
+                let sx, sy, x, y, xhole, yhole;
+                
+                ct.fillRect(0, 0, img.width, img.height);
+                for(let i=0;i<pj;i++){
+                    x=i % info.kolom;
+                    y=Math.floor(i / info.kolom);
+                    xhole=info.hole % info.kolom;
+                    yhole=Math.floor(info.hole / info.kolom);
+
+                    sx=map[i] % info.kolom;
+                    sy=Math.floor(map[i] / info.kolom);
+                    if(x!=xhole || y!=yhole)ct.drawImage(img, sx*panjang, sy*tinggi, panjang, tinggi, x*panjang, y*tinggi, panjang, tinggi);
+                }
+            }
+
+            img.onload=()=>{
+                kanvas.width=img.width;
+                kanvas.height=img.height;
+                ct.strokeStyle="yellow";
+                ct.fillStyle="yellow";
+                ct.lineWidth=2;
+                acak();
+                gambar_slider(ct, img);
+            }
+
+            kanvas.onclick=(e)=>{
+                const rct = kanvas.getBoundingClientRect();
+                let panjang=img.width/info.kolom;
+                let tinggi=img.height/info.baris;
+
+                const x = Math.floor((e.clientX - rct.left)/panjang);
+                const y = Math.floor((e.clientY - rct.top)/tinggi);
+                
+                geser(x, y);
+                
+                if(cek_menang()){
+                    if(info.tile<100)tampilkan('modal-menang');
+                    else alert("Kupikir cupu, ternyata suhu");
+                    info.hole=info.tile;
+                }
+
+                gambar_slider(ct, img);
+            }
+
+            function cek_menang(){
+                let total=0;
+
+                for(let i=0;i<info.tile;i++)if(map[i]==i)total++;
+
+                if(total==info.tile){
+                    return true;
+                }else return false;
+            }
+
+            function geser(x, y){
+                let xhole=info.hole%info.kolom;
+                let yhole=Math.floor(info.hole / info.kolom);
+                if(Math.abs(x-xhole+y-yhole)==1){
+                    let pos=y*info.kolom+x;
+                    
+                    let tmp=map[info.hole];
+                    map[info.hole]=map[pos];
+                    map[pos]=tmp;
+
+                    info.hole=pos;
+                }
+            }
+
+            function tampilkan(id){
+                let elemen=document.getElementById(id);
+                elemen.style.display='flex';
+            }
+
+            function sembunyikan(id){
+                let elemen=document.getElementById(id);
+                elemen.style.display='none';
+            }
+        </script>
+    </body>
+</html>
